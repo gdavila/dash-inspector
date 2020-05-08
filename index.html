@@ -48,7 +48,7 @@
         firstLoad = false;
         player.initialize(video, url, true); 
         button.value = "Reload"}    
-      
+      log("userEvent", "Video loaded")
       controlbarRestart();
       google.charts.load('current', {'packages':['corechart']});
       google.charts.setOnLoadCallback(initializeChart);
