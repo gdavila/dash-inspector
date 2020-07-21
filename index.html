@@ -1,296 +1,95 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <title>dash.js v3.0.1</title>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-174426-4"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'UA-174426-4');
-  </script>
-  <link rel="stylesheet" href="controlbar.css">
-  <script src="dash.all.debug.js"></script>
-  <script src="ControlBar.js"></script>
-  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-
-  <script>
-
-    var video, player, options, data, src, options, controlbar, dashMetrics, mediaFilesInfo=[], firstLoad = true;
-    function init() {
-      player = dashjs.MediaPlayer().create();
-      player.updateSettings({ 'streaming': { 'lowLatencyEnabled': false }});
-      player.updateSettings({'debug': {'logLevel': dashjs.Debug.LOG_LEVEL_DEBUG }});
-      //player.updateSettings({ 'debug': { 'logLevel': dashjs.Debug.LOG_LEVEL_NONE }});
-      setListener();
-      video = document.querySelector(".videoContainer video");
-      video.autoplay=true
-      document.getElementById("trace").innerHTML = "";
-      
-    }
-
-    function controlbarRestart() {
-      if (typeof controlbar !== 'undefined') {controlbar.destroy();}
-      controlbar = new ControlBar(player);
-      controlbar.initialize();
-    }
-          
-    function start(button) {
-      src=document.getElementById('srcUrl').value;
-      var url = src;
-
-      if (!firstLoad){
-        player.attachSource(url); 
-        mediaFilesInfo=[]; 
-        }
-      else{
-        firstLoad = false;
-        player.initialize(video, url, true); 
-        button.value = "Reload"}    
-      log("userEvent", "Video loaded")
-      controlbarRestart();
-      google.charts.load('current', {'packages':['corechart']});
-      google.charts.setOnLoadCallback(initializeChart);
-      var eventPoller = setInterval(update,800);
-    }
-
-    function update(){
-      dashMetrics = player.getDashMetrics();
-      if (dashMetrics) {
-        var bufferLevel = dashMetrics.getCurrentBufferLevel('video');
-        var bitrate_index = player.getQualityFor('video')
-        var bitrate_details = player.getBitrateInfoListFor("video")[bitrate_index]
-        document.getElementById('bufferLevel').innerText = bufferLevel + " secs";
-        document.getElementById('currentQuality').innerText = '['+bitrate_index+']';
-        if (typeof bitrate_details !== 'undefined') {
-          document.getElementById('currentBitrate').innerText = bitrate_details.bitrate/1000 + ' kbps @ ' + bitrate_details.width + 'x' + bitrate_details.height ; }
-        if (!video.paused){
-          var color = "#0070cc";
-          data.addRow([new Date(), bitrate_index, 'Buffer = ' + bufferLevel + 's','point {fill-color: ' + color + '}']);
-          if (data.getNumberOfRows() > 500){
-            data.removeRow(0); }
-          chart.draw(data, options);
-        }  
-      }
-    }
+    <meta charset="utf-8"/>
+    <title>Control bar Sample</title>
+    <meta name="description" content="" />
 
 
-    function initializeChart() {
-        options = {
-          title: 'Quality Index',
-          hAxis: {title: 'Local Time'},
-          vAxis: {title: 'Index'},
-          legend: 'none',
-          explorer: { actions: ['dragToZoom', 'rightClickToReset'], maxZoomIn: 0 }
-          };
-        data = new google.visualization.DataTable();
-        data.addColumn('date', 'Time');
-        data.addColumn('number', 'Quality Index');
-        data.addColumn({'type':'string', 'role':'tooltip'}); 
-        data.addColumn({'type': 'string', 'role': 'style'});
-        chart = new google.visualization.LineChart(document.getElementById('chart_div'));
-      }
-    
-    function clearReport(){
-      let tempInfo = []
-      mediaFilesInfo.forEach(element => {if (element.type == "InitializationSegment" ) {tempInfo.push(element);}})
-      mediaFilesInfo=tempInfo;
-      log("userEvent", "logs cleaned")
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 
-    }
+    <link rel="stylesheet" href="styles/controlbar.css">
+    <link rel="stylesheet" href="styles/player.css">
+    <script class="code" src="src/ControlBar.js"></script>
+    <script class="code" src="src/dash.all.debug.js"></script>
 
-    function showEvent(e){
-	        if (e.request.mediaType === "video") {
-            log( e.type, e.request.url);
-            mediaFilesInfo.push({index: e.request.index,
-                                startTime: e.request.startTime, 
-                                mediaType: e.request.mediaType, 
-                                type: e.request.type,
-                                quality :  e.request.quality,
-                                representationId: e.request.representationId,
-                                url : e.request.url,
-                                serviceLocation : e.request.serviceLocation })
-            console.log(mediaFilesInfo[mediaFilesInfo.length-1])
-            }
-        }
+    <script class="code" src="player.js"> </script>
 
-    function log(key, msg) {
-      msg = msg.length > 60 ?   "..." + msg.substring(msg.length -60, msg.length): msg; // to avoid wrapping with large objects
-      msg = key + ":" + msg;
-      var tracePanel = document.getElementById("trace");
-      tracePanel.innerHTML += msg + "\n";
-      tracePanel.scrollTop = tracePanel.scrollHeight;
-      //console.log(msg);
-      }
-
-    function setListener() {
-          player.on(dashjs.MediaPlayer.events['FRAGMENT_LOADING_COMPLETED'],showEvent);
-      }
-
-    function downloadReport(){
-      let MediaInfo = player.getTracksFor("video")[0]
-      let MpdUrl = player.getSource()
-      let MediaFiles =  mediaFilesInfo
-      let Representations = []
-
-      for (let i =0; i < MediaInfo.representationCount; i++){
-        player.setQualityFor("video",i)
-        Representations.push(dashMetrics.getCurrentRepresentationSwitch("video").to)
-      }
-
-
-      let jsonContent =  JSON.stringify({MpdUrl, MediaInfo, MediaFiles, Representations})
-
-      jsonContent = [jsonContent];
-      var blob1 = new Blob(jsonContent, { type: "text/plain;charset=utf-8" });
-      //Check the Browser.
-      var isIE = false || !!document.documentMode;
-      if (isIE) {
-            window.navigator.msSaveBlob(blob1, "MediaFilesInfo.json");
-        } 
-      else{
-      //let encodedUri = "data:text/json;charset=utf-8," + encodeURIComponent(jsonContent);
-      //let link = document.createElement("a");
-      //link.setAttribute("href", encodedUri);
-      //link.setAttribute("download", "MediaFilesInfo.json");
-      //document.body.appendChild(link);
-      //link.click();
-      //document.body.removeChild(link)
-      //link.remove();
-      let url = window.URL || window.webkitURL;
-      link = url.createObjectURL(blob1);
-      let a = document.createElement("a");
-      a.download = "MediaFilesInfo.json";
-      a.href = link;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      log("userEvent", "Logs Downloaded")
-    }
-
-
-    }
-
-
-        </script>
-
-        <style>
-
-          video {
-            width: 100%;
-        }
-        .dash-video-player {
-            position: relative;  /* This position relative is needed to position the menus */
-            width: 640px;
-            margin: 0 auto;
-        }
-        td {   
-          font-family : "Myriad Web",Verdana,Helvetica,Arial,sans-serif;
-          font-size: 14px;
-          color: #555;
-        }
-        .title {
-         font-size: 24px;
-         vertical-align: middle;
-         padding-left: 10px;
-       }
-       .header {
-        display:flex;
-        flex-wrap: nowrap;
-        align-items: center;
-        color: #333;
-
-      }
-      img {
-        width:100px;
-        border-right: 1px solid #ccc;
-        padding-right: 10px
-      }
-      .button {
-        color: #fff;
-        background-color: #0099CC;
-      }
-
-      textarea {
-            width: 640px;
-            height:180px;
-            font-size: 10px;
-
-    </style>
-  </head>
-  <body>
-    <!-- yeah, I still use tables. It's faster frankly than endless divs and css when putting things in boxes -->
-    <table width="100%" >
-      <tr><td colspan=2>
-        <div class="header">
-          <div class="title">DASH-IF PLAYER</div>
-        </div>
-        <p/>
-		    Player for fun based on <a href="https://github.com/Dash-Industry-Forum/dash.js/">dash.js v3.0.1</a> <p/>
-        <input type="text" weight=320px  id="srcUrl" value = "https://media.axprod.net/TestVectors/v6.1-Clear/Manifest_1080p.mpd"/>
-        <input type="button" value="Load" onclick="start(this)"> <input type="button" value="Download Playback logs" onclick="downloadReport()" >
-        <input type="button" value="Restart Playback logs" onclick="clearReport()" >
-        <p/>
-        &nbsp;
-      </td></tr>
-      <tr><td width="640px">
-        <div class="dash-video-player ">
-          <!-- HTML structure needed for the ControlBar -->
-          <div class="videoContainer" id="videoContainer">
-              <video preload="auto" autoplay="true" > </video>
-              <div id="videoController" class="video-controller unselectable">
-                  <div id="playPauseBtn" class="btn-play-pause" title="Play/Pause">
-                      <span id="iconPlayPause" class="icon-play"></span>
-                  </div>
-                  <span id="videoTime" class="time-display">00:00:00</span>
-                  <div id="fullscreenBtn" class="btn-fullscreen control-icon-layout" title="Fullscreen">
-                      <span class="icon-fullscreen-enter"></span>
-                  </div>
-                  <div id="bitrateListBtn" class="control-icon-layout" title="Bitrate List">
-                      <span class="icon-bitrate"></span>
-                  </div>
-                  <input type="range" id="volumebar" class="volumebar" value="1" min="0" max="1" step=".01"/>
-                  <div id="muteBtn" class="btn-mute control-icon-layout" title="Mute">
-                      <span id="iconMute" class="icon-mute-off"></span>
-                  </div>
-                  <div id="trackSwitchBtn" class="control-icon-layout" title="A/V Tracks">
-                      <span class="icon-tracks"></span>
-                  </div>
-                  <div id="captionBtn" class="btn-caption control-icon-layout" title="Closed Caption">
-                      <span class="icon-caption"></span>
-                  </div>
-                  <span id="videoDuration" class="duration-display">00:00:00</span>
-                  <div class="seekContainer">
-                      <div id="seekbar" class="seekbar seekbar-complete">
-                          <div id="seekbar-buffer" class="seekbar seekbar-buffer"></div>
-                          <div id="seekbar-play" class="seekbar seekbar-play"></div>
-                      </div>
-                  </div>
-              </div>
-          </div>
-        </div>
-
-      </td><td valign="top" align="left">
-        <div id="chart_div" style="width:100%; height:360px;">
-        </td></tr>
-        <tr><td colspan=2>
-          <div>
-            <strong>Current Downloaded Quality:</strong>
-            <span id="currentQuality"></span>
-            <span id="currentBitrate"></span>
-            <br/>
-            <strong>Buffer level:</strong>
-            <span id="bufferLevel"></span>
-          </div>
-        </td></tr></table>
+    <body>
+        <!-- yeah, I still use tables. It's faster frankly than endless divs and css when putting things in boxes -->
+        <table width="100%" >
+            <tr><td colspan=2>
+            <div class="header">
+                <div class="title">DASH-IF PLAYER</div>
+            </div>
+            <p/>
+                Player for fun based on <a href="https://github.com/Dash-Industry-Forum/dash.js/">dash.js v3.0.1</a> <p/>
+                <input type="text" weight=320px  id="srcUrl" value = "https://media.axprod.net/TestVectors/v6.1-Clear/Manifest_1080p.mpd"/>
+                <input type="button" value="Load" id= "startButton" onclick="start(this)"> <input type="button" value="Download Playback logs" onclick="downloadReport()" >
+                <input type="button" value="Restart Playback logs" onclick="clearReport()" >
+            <p/>
+                &nbsp;
+            </td></tr>
+            <tr>
+                <td width="640px">
+                    <div class="dash-video-player ">
+                        <!-- HTML structure needed for the ControlBar -->
+                        <div class="videoContainer" id="videoContainer">
+                        <video preload="auto" autoplay="true" > </video>
+                        <div id="videoController" class="video-controller unselectable">
+                            <div id="playPauseBtn" class="btn-play-pause" title="Play/Pause">
+                                <span id="iconPlayPause" class="icon-play"></span>
+                            </div>
+                            <span id="videoTime" class="time-display">00:00:00</span>
+                            <div id="fullscreenBtn" class="btn-fullscreen control-icon-layout" title="Fullscreen">
+                                <span class="icon-fullscreen-enter"></span>
+                            </div>
+                            <div id="bitrateListBtn" class="control-icon-layout" title="Bitrate List">
+                                <span class="icon-bitrate"></span>
+                            </div>
+                            <input type="range" id="volumebar" class="volumebar" value="1" min="0" max="1" step=".01"/>
+                            <div id="muteBtn" class="btn-mute control-icon-layout" title="Mute">
+                                <span id="iconMute" class="icon-mute-off"></span>
+                            </div>
+                            <div id="trackSwitchBtn" class="control-icon-layout" title="A/V Tracks">
+                                <span class="icon-tracks"></span>
+                            </div>
+                            <div id="captionBtn" class="btn-caption control-icon-layout" title="Closed Caption">
+                                <span class="icon-caption"></span>
+                            </div>
+                            <span id="videoDuration" class="duration-display">00:00:00</span>
+                            <div class="seekContainer">
+                                <div id="seekbar" class="seekbar seekbar-complete">
+                                    <div id="seekbar-buffer" class="seekbar seekbar-buffer"></div>
+                                    <div id="seekbar-play" class="seekbar seekbar-play"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td valign="top" align="left">
+                    <div id="chart_div" style="width:100%; height:360px;">
+                </td>
+            </tr>
+            <tr>
+                <td colspan=2>
+                    <div>
+                        <strong>Current Downloaded Quality:</strong>
+                        <span id="currentQuality"></span>
+                        <span id="currentBitrate"></span>
+                        <br/>
+                        <strong>Buffer level:</strong>
+                        <span id="bufferLevel"></span>
+                    </div>
+                </td>
+            </tr>
+        </table>
         &nbsp;
         <p/>
         <textarea  id="trace" placeholder="Downloaded URLs Mediafiles of the active stream will be displayed here" readonly></textarea>
         <script>
-          document.addEventListener("DOMContentLoaded", function () {
-              init();
-          });
-      </script>
-      </body>
-      </html>
+            document.addEventListener("DOMContentLoaded", function () { init();});
+        </script>
+    </body>
+ </html>
