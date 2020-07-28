@@ -3,32 +3,44 @@
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
-    <title>Control bar Sample</title>
+    <title>Dash Segment Analysis | ARS </title>
     <meta name="description" content="" />
 
-
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-
+    <link rel="icon" href="favicon.ico">
     <link rel="stylesheet" href="styles/controlbar.css">
     <link rel="stylesheet" href="styles/player.css">
-    <script class="code" src="src/ControlBar.js"></script>
-    <script class="code" src="src/dash.all.debug.js"></script>
 
-    <script class="code" src="player.js"> </script>
-
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript" src="src/ControlBar.js"></script>
+    <script type="text/javascript" src="src/mpd-parser.js"></script>
+    <script type="text/javascript" src="http://cdn.dashjs.org/v3.1.2/dash.all.debug.js"></script>
+    <script type="text/javascript" src="player.js"> </script>
+     <!---
+     <script type="text/javascript" src="src/dash-mpd-parser.js"></script>
+     -->
     <body>
         <!-- yeah, I still use tables. It's faster frankly than endless divs and css when putting things in boxes -->
         <table width="100%" >
             <tr><td colspan=2>
             <div class="header">
-                <div class="title">DASH-IF PLAYER</div>
+                <div class="title">Dash Segment Analysis </div>
+                &nbsp;
+                &nbsp;
+                &nbsp;
+                Media | Arquitectura Redes y Servicios
             </div>
             <p/>
-                Player for fun based on <a href="https://github.com/Dash-Industry-Forum/dash.js/">dash.js v3.0.1</a> <p/>
+                Player for fun based on <a href="https://github.com/Dash-Industry-Forum/dash.js/">dash.js v3.1.2</a> <p/>
                 <input type="text" weight=320px  id="srcUrl" value = "https://media.axprod.net/TestVectors/v6.1-Clear/Manifest_1080p.mpd"/>
-                <input type="button" value="Load" id= "startButton" onclick="start(this)"> <input type="button" value="Download Playback logs" onclick="downloadReport()" >
-                <input type="button" value="Restart Playback logs" onclick="clearReport()" >
-            <p/>
+                <input type="button" value="Reload" id= "startButton" onclick="reset_playback()"> Low Latency <input type="checkbox" id="lowlatency" value="Low Latency" onclick="checkLL()">
+                <p/> 
+                <input type="button" value="Download Playback" onclick="downloadReport()" >
+                <input type="button" value="Restart Playback" onclick="clearReport()" >
+                <span id="MediaSegments"></span> media segments recorded
+                <br/>
+                Last media segment duration: <span id="lastSegmentDuration"></span>  (s)
+                <br/>
+                Last media segment startTime: <span id="lastStartTime"></span>  (s)
                 &nbsp;
             </td></tr>
             <tr>
@@ -69,7 +81,7 @@
                     </div>
                 </td>
                 <td valign="top" align="left">
-                    <div id="chart_div" style="width:100%; height:360px;">
+                    <div id="chart_bitrate" style="width:100%; height:360px;">
                 </td>
             </tr>
             <tr>
@@ -81,15 +93,24 @@
                         <br/>
                         <strong>Buffer level:</strong>
                         <span id="bufferLevel"></span>
+                        <br/>
+                        <strong>frame rate:</strong>
+                        <span id="framerate"></span>                   
                     </div>
                 </td>
             </tr>
+            <td>
+                &nbsp;
+                <p/>
+                <textarea  id="trace" placeholder="Downloaded URLs Mediafiles of the active stream will be displayed here" readonly></textarea>
+                <script>
+                    document.addEventListener("DOMContentLoaded", function () { init();});
+                </script>
+            </td>
+            <td>
+                <div id="chart_profiles" style="width:100%; height:360px;">   
+            </td>
+
         </table>
-        &nbsp;
-        <p/>
-        <textarea  id="trace" placeholder="Downloaded URLs Mediafiles of the active stream will be displayed here" readonly></textarea>
-        <script>
-            document.addEventListener("DOMContentLoaded", function () { init();});
-        </script>
     </body>
  </html>

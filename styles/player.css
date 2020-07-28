@@ -33,6 +33,7 @@ background-color: #0099CC;
 }
 
 textarea {
+    resize: none;
     width: 640px;
     height:180px;
     font-size: 10px;
