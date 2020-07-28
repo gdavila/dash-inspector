@@ -34,6 +34,7 @@ function init() {
 
   //poller for metrics
   interval = 2;
+
   let eventPoller = setInterval(update_metrics,interval*1000);
 
   // event handler
@@ -63,9 +64,9 @@ function reset_playback() {
 
 
 function update_metrics(){
-  streamInfo = player.getActiveStream().getStreamInfo();
   dashMetrics = player.getDashMetrics();
   dashAdapter = player.getDashAdapter();
+  streamInfo = player.getActiveStream().getStreamInfo();
   if (dashMetrics) {
     bufferLevel = dashMetrics.getCurrentBufferLevel('video');
   }
