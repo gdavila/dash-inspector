@@ -1,6 +1,6 @@
 
 // player
-let video, player, controlbar, dashMetrics, streamInfo,src;
+let video, player, controlbar, dashMetrics, streamInfo,src, firstSegment=true, init_time;
 
 //Google charts
 let data_profiles, data_bitrate, lowlatency= false;
@@ -46,6 +46,7 @@ function reset_playback() {
     mediaFilesInfo=[]
     MediaSegments=0
     lastDecodedByteCount=0
+    firstSegment=true;
     controlbar.reset();
     url = document.getElementById('srcUrl').value;
     player.attachSource(url);
@@ -82,7 +83,11 @@ function update_metrics(){
 
 function plot_bitrate(){
   if (!isNaN(lastStartTime) && !isNaN(videoBitrate) && !isNaN(bitrate)){
-    data_bitrate.addRow([lastStartTime, Math.round(videoBitrate), bitrate]);
+    if (firstSegment===true) {
+      init_time = lastStartTime;
+      firstSegment=false;
+    };
+    data_bitrate.addRow([lastStartTime-init_time, Math.round(videoBitrate), bitrate]);
     if (data_bitrate.getNumberOfRows() > 500){ data_bitrate.removeRow(0); }
     chart_bitrate.draw(data_bitrate, {
       title: 'Bitrate',
