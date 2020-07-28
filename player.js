@@ -88,14 +88,17 @@ function plot_bitrate(){
       init_time = lastStartTime;
       firstSegment=false;
     };
-    data_bitrate.addRow([lastStartTime-init_time, Math.round(videoBitrate), bitrate]);
-    if (data_bitrate.getNumberOfRows() > 500){ data_bitrate.removeRow(0); }
-    chart_bitrate.draw(data_bitrate, {
-      title: 'Bitrate',
-      hAxis: {title: 'TimeStamp Video'},
-      vAxis: {title: 'Kbps'},
-      explorer: { actions: ['dragToZoom', 'rightClickToReset'], maxZoomIn: 0 }
-    });
+
+    if (data_bitrate!=undefined){
+      data_bitrate.addRow([lastStartTime-init_time, Math.round(videoBitrate), bitrate]);
+      if (data_bitrate.getNumberOfRows() > 500){ data_bitrate.removeRow(0); }
+      chart_bitrate.draw(data_bitrate, {
+        title: 'Bitrate',
+        hAxis: {title: 'TimeStamp Video'},
+        vAxis: {title: 'Kbps'},
+        explorer: { actions: ['dragToZoom', 'rightClickToReset'], maxZoomIn: 0 }
+      });
+    }
   }
   
 }
