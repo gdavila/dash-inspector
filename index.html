@@ -13,7 +13,7 @@
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript" src="src/ControlBar.js"></script>
     <script type="text/javascript" src="src/mpd-parser.js"></script>
-    <script type="text/javascript" src="http://cdn.dashjs.org/v3.1.2/dash.all.debug.js"></script>
+    <script type="text/javascript" src="src/dash.all.debug.js"></script>
     <script type="text/javascript" src="player.js"> </script>
      <!---
      <script type="text/javascript" src="src/dash-mpd-parser.js"></script>
@@ -21,7 +21,7 @@
     <body>
         <!-- yeah, I still use tables. It's faster frankly than endless divs and css when putting things in boxes -->
         <table width="100%" >
-            <tr><td colspan=2>
+            <tr><td colspan=3>
             <div class="header">
                 <div class="title">Dash Segment Analysis </div>
                 &nbsp;
@@ -32,7 +32,7 @@
             <p/>
                 Player for fun based on <a href="https://github.com/Dash-Industry-Forum/dash.js/">dash.js v3.1.2</a> <p/>
                 <input type="text" weight=320px  id="srcUrl" value = "https://media.axprod.net/TestVectors/v6.1-Clear/Manifest_1080p.mpd"/>
-                <input type="button" value="Reload" id= "startButton" onclick="reset_playback()"> Low Latency <input type="checkbox" id="lowlatency" value="Low Latency" onclick="checkLL()">
+                <input type="button" value="Reload" id= "startButton" onclick="restartPlayback()"> Low Latency <input type="checkbox" id="lowlatency" value="Low Latency" onclick="checkLL()">
                 <p/> 
                 <input type="button" value="Download Playback" onclick="downloadReport()" >
                 <input type="button" value="Restart Playback" onclick="clearReport()" >
@@ -44,7 +44,7 @@
                 &nbsp;
             </td></tr>
             <tr>
-                <td width="640px">
+                <td rowspan="3" width="640px">
                     <div class="dash-video-player ">
                         <!-- HTML structure needed for the ControlBar -->
                         <div class="videoContainer" id="videoContainer">
@@ -80,12 +80,23 @@
                         </div>
                     </div>
                 </td>
-                <td valign="top" align="left">
-                    <div id="chart_bitrate" style="width:100%; height:360px;">
+                <td colspan=2 valign="top" align="left">
+                    <div id="chart_bitrate" style="width:100%; height:160px;"></div>
                 </td>
             </tr>
             <tr>
                 <td colspan=2>
+                    <div id="chart_profiles" style="width:100%; height:160px;"> </div>
+                </td>
+            </tr>
+            <tr>
+                <td colspan=2>
+                    <div id="chart_throughput2" style="width:100%; height:160px;"> </div>
+                </td>
+            </tr>
+            
+            <tr>
+                <td colspan=3>
                     <div>
                         <strong>Current Downloaded Quality:</strong>
                         <span id="currentQuality"></span>
@@ -99,18 +110,22 @@
                     </div>
                 </td>
             </tr>
-            <td>
-                &nbsp;
-                <p/>
-                <textarea  id="trace" placeholder="Downloaded URLs Mediafiles of the active stream will be displayed here" readonly></textarea>
-                <script>
-                    document.addEventListener("DOMContentLoaded", function () { init();});
-                </script>
-            </td>
-            <td>
-                <div id="chart_profiles" style="width:100%; height:360px;">   
-            </td>
-
+            <tr>
+                <td>
+                    &nbsp;
+                    <p/>
+                    <textarea  id="trace" placeholder="Downloaded URLs Mediafiles of the active stream will be displayed here" readonly></textarea>
+                </td> 
+                <td>
+                    <div id="chart_SegmentSize" style="height:100%; width:360px;"> </div>
+                </td>
+                <td>
+                    <div id="chart_throughput1" style="height:100%; width:360px;"> </div>
+                </td>
+            </tr>
         </table>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () { init();});
+        </script>
     </body>
  </html>

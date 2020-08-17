@@ -1,13 +1,13 @@
 
 // player
-let video, player, controlbar, dashMetrics, streamInfo,src, firstSegment=true, init_time;
+let video, player, controlbar, dashMetrics;
 
 //Google charts
-let data_profiles, data_bitrate, lowlatency= false;
+let dataProfiles, dataBitrate, dataThroughput1, dataThroughput2, dataSegmentSize, lowlatency= false,bytesTotal;
 
-// video metrics
-let mediaFilesInfo=[], MediaSegments=0, interval;
-let lastDecodedByteCount=0,bufferLevel, lastSegmentDuration, lastStartTime, videoBitrate=0, bitrate=0;
+// video metrics and info
+let mediaFilesInfo=[], MediaSegments=0, interval, streamInfo,src, firstSegment=true, initTime;
+let lastDecodedByteCount=0,bufferLevel, lastSegmentDuration, lastStartTime, videoBitrate=0, bitrate=0, downloadTime=0;
 
 function init() {
   //initializing the player
@@ -16,37 +16,37 @@ function init() {
   player.updateSettings({'debug': {'logLevel': dashjs.Debug.LOG_LEVEL_NONE }});
   player.initialize();
 
-  //initializing the view
+  //initializing the video container
   video = document.querySelector(".videoContainer video");
   player.attachView(video)
   url = document.getElementById('srcUrl').value;
   player.attachSource(url);
 
+  //initializing Akamai control bar
   controlbar = new ControlBar(player);
   controlbar.initialize();
 
   //initializing trace textbox
   document.getElementById("trace").innerHTML = ""; 
-  //initializing chart
 
+  //initializing google charts
   google.charts.load('current', {'packages':['corechart', 'line']});
   google.charts.setOnLoadCallback(initializeChart);
 
-  //poller for metrics
+  //poller interval to update metrics (seconds)
   interval = 2;
+  let eventPoller = setInterval(updateMetrics,interval*1000);
 
-  let eventPoller = setInterval(update_metrics,interval*1000);
-
-  // event handler
+  // event handler: it handles when a A/V segment is full loaded
   player.on(dashjs.MediaPlayer.events['FRAGMENT_LOADING_COMPLETED'],showEvent);
 
 
 }
           
-function reset_playback() {
-    mediaFilesInfo=[]
-    MediaSegments=0
-    lastDecodedByteCount=0
+function restartPlayback() {
+    mediaFilesInfo=[];
+    MediaSegments=0;
+    lastDecodedByteCount=0;
     firstSegment=true;
     controlbar.reset();
     url = document.getElementById('srcUrl').value;
@@ -58,12 +58,11 @@ function reset_playback() {
         player.updateSettings({'streaming': {'lowLatencyEnabled': false}});
       }
     google.charts.setOnLoadCallback(initializeChart);
-
     log("userEvent", "Video loaded")
 }
 
 
-function update_metrics(){
+function updateMetrics(){
   dashMetrics = player.getDashMetrics();
   dashAdapter = player.getDashAdapter();
   streamInfo = player.getActiveStream().getStreamInfo();
@@ -79,23 +78,24 @@ function update_metrics(){
     plot_bitrate();
   } */
 
-
 }
 
-function plot_bitrate(){
+function plotBitrate(){
   if (!isNaN(lastStartTime) && !isNaN(videoBitrate) && !isNaN(bitrate)){
     if (firstSegment===true) {
-      init_time = lastStartTime;
+      initTime = lastStartTime;
       firstSegment=false;
     };
 
-    if (data_bitrate!=undefined){
-      data_bitrate.addRow([lastStartTime-init_time, Math.round(videoBitrate), bitrate]);
-      if (data_bitrate.getNumberOfRows() > 500){ data_bitrate.removeRow(0); }
-      chart_bitrate.draw(data_bitrate, {
+    if (dataBitrate!=undefined){
+      dataBitrate.addRow([lastStartTime-initTime, Math.round(videoBitrate), bitrate]);
+      if (dataBitrate.getNumberOfRows() > 200){ dataBitrate.removeRow(0); }
+
+      chartBitrate.draw(dataBitrate,{
         title: 'Bitrate',
-        hAxis: {title: 'TimeStamp Video'},
+        hAxis: {title: 'timestamp'},
         vAxis: {title: 'Kbps'},
+        legend: { position: 'bottom', alignment: 'end' },
         explorer: { actions: ['dragToZoom', 'rightClickToReset'], maxZoomIn: 0 }
       });
     }
@@ -103,7 +103,7 @@ function plot_bitrate(){
   
 }
 
-function update_playback_info(){
+function updatePlaybackLogs(){
   if (dashMetrics!=null  && streamInfo!=null ){
     const periodIdx = streamInfo.index;
     var repSwitch = dashMetrics.getCurrentRepresentationSwitch('video', true);
@@ -115,48 +115,104 @@ function update_playback_info(){
 
     document.getElementById('framerate').innerText = frameRate + " fps";
 
-    let q_index = player.getQualityFor('video')
-    let q_details = player.getBitrateInfoListFor("video")[q_index]
+    // quality Index of video played
+    let qIndex = player.getQualityFor('video')
+    let qDetails = player.getBitrateInfoListFor("video")[qIndex]
     document.getElementById('lastSegmentDuration').innerText = lastSegmentDuration;
     document.getElementById('lastStartTime').innerText = lastStartTime;
-    document.getElementById('currentQuality').innerText = '[id: '+repSwitch.to+'][index: ' + q_index + ']';
+    document.getElementById('currentQuality').innerText = '[id: '+repSwitch.to+'][index: ' + qIndex + ']';
     document.getElementById('MediaSegments').innerText = '['+MediaSegments+']';
 
 
-    if (typeof q_details !== 'undefined') {
-      document.getElementById('currentBitrate').innerText = bitrate + ' kbps @ ' + q_details.width + 'x' + q_details.height ; }
+    if (typeof qDetails !== 'undefined') {
+      document.getElementById('currentBitrate').innerText = bitrate + ' kbps @ ' + qDetails.width + 'x' + qDetails.height ; }
     if (!video.paused && bufferLevel){
+
+      // Plot current profile index vs date
       var color = "#0070cc";
-      data_profiles.addRow([new Date(), q_index, 'Buffer = ' + bufferLevel + 's','point {fill-color: ' + color + '}']);
-      if (data_profiles.getNumberOfRows() > 500){
+      dataProfiles.addRow([new Date(), qIndex, 'Buffer = ' + bufferLevel + 's','point {fill-color: ' + color + '}']);
+      if (dataProfiles.getNumberOfRows() > 200){
         data_profiles.removeRow(0); }
-      chart_profiles.draw(data_profiles, {
+      chartProfiles.draw(dataProfiles, {
         title: 'Quality Index',
         hAxis: {title: 'Local Time'},
         vAxis: {title: 'Index'},
         legend: 'none',
         explorer: { actions: ['dragToZoom', 'rightClickToReset'], maxZoomIn: 0 }
       });
+
+      // Segment Size (bytesTotal) vs Downloading Time
+      let throughput= (bytesTotal*8*1000)/(downloadTime*1000000) //Mbps
+      dataThroughput1.addRow([downloadTime, bytesTotal*8/1000]);
+      dataThroughput2.addRow([new Date(), throughput ]);
+      dataSegmentSize.addRow([bytesTotal*8/1000000]);
+
+      if (dataThroughput1.getNumberOfRows() > 200){
+        dataThroughput1.removeRow(0); 
+        dataSegmentSize.removeRow(0);
+      }
+
+      chartThroughput1.draw(dataThroughput1, { 
+        title: 'Segment Size vs downloading time',
+        hAxis: {title: 'downloading time [ms]'},
+        vAxis: {title: 'Segment Size [MB]'},
+        legend: 'none',
+        explorer: { actions: ['dragToZoom', 'rightClickToReset'], maxZoomIn: 0 }
+      });
+
+      chartThroughput2.draw(dataThroughput2, { 
+        title: 'Throughput',
+        hAxis: {title: 'timestamp'},
+        vAxis: {title: 'Mbps', scaleType: 'log'},
+        legend: 'none',
+        explorer: { actions: ['dragToZoom', 'rightClickToReset'], maxZoomIn: 0 }
+      });
+
+      chartSegmentSize.draw(dataSegmentSize, {
+        title: 'Segment Size | Histogram',
+        hAxis: {title: '[MB]'},
+        vAxis: {title: 'Count'},
+        legend: 'none',
+        histogram: { lastBucketPercentile: 20},
+        explorer: { actions: ['dragToZoom', 'rightClickToReset'], maxZoomIn: 0 }
+      });
+
     } 
   }
 }
 
 function initializeChart() {
-    data_profiles = new google.visualization.DataTable();
-    data_profiles .addColumn('date', 'Time');
-    data_profiles .addColumn('number', 'Quality Index');
-    data_profiles .addColumn({'type':'string', 'role':'tooltip'}); 
-    data_profiles .addColumn({'type': 'string', 'role': 'style'});
-    chart_profiles = new google.visualization.LineChart(document.getElementById('chart_profiles'));
+    dataProfiles = new google.visualization.DataTable();
+    dataProfiles .addColumn('date', 'Time');
+    dataProfiles .addColumn('number', 'Quality Index');
+    dataProfiles .addColumn({'type':'string', 'role':'tooltip'}); 
+    dataProfiles .addColumn({'type': 'string', 'role': 'style'});
+    chartProfiles = new google.visualization.LineChart(document.getElementById('chart_profiles'));
     
-    data_bitrate = new google.visualization.DataTable();
-    data_bitrate .addColumn('number', 'timestamp');
-    data_bitrate .addColumn('number', 'video bitrate');
-    data_bitrate .addColumn('number', 'profile bitrate');
-    chart_bitrate = new google.charts.Line(document.getElementById('chart_bitrate'));
-    google.visualization.events.addListener(chart_bitrate, 'error', function (err) {
+    dataBitrate = new google.visualization.DataTable();
+    dataBitrate .addColumn('number', 'timestamp');
+    dataBitrate .addColumn('number', 'video bitrate');
+    dataBitrate .addColumn('number', 'profile bitrate');
+    chartBitrate = new google.visualization.LineChart(document.getElementById('chart_bitrate'));
+    google.visualization.events.addListener(chartBitrate, 'error', function (err) {
       google.visualization.errors.removeError(err.id);
     });
+
+    dataThroughput1 = new google.visualization.DataTable();
+    dataThroughput1 .addColumn('number', 'Segment Download Time');
+    dataThroughput1 .addColumn('number', 'Segment Size');
+    chartThroughput1 = new google.visualization.ScatterChart(document.getElementById('chart_throughput1'));
+
+    dataThroughput2 = new google.visualization.DataTable();
+    dataThroughput2 .addColumn('date', 'Time');
+    dataThroughput2 .addColumn('number', 'Segment Download Time');
+    chartThroughput2 = new google.visualization.ScatterChart(document.getElementById('chart_throughput2'));
+
+    dataSegmentSize = new google.visualization.DataTable();
+    dataSegmentSize .addColumn('number', 'Segment Size');
+    chartSegmentSize = new google.visualization.Histogram(document.getElementById('chart_SegmentSize'));
+
+
   }
     
 function clearReport(){
@@ -190,10 +246,13 @@ function showEvent(e){
         }
         console.log(e)
         log( e.type, e.request.url);
+        downloadTime = e.request.requestEndDate.getTime()- e.request.requestStartDate.getTime();
+        bytesTotal= e.request.bytesTotal
         mediaFilesInfo.push({index: e.request.index,
                             startTime: e.request.startTime,
                             duration: e.request.duration,
                             mediaType: e.request.mediaType, 
+                            downloadTime:e.request.requestEndDate.getTime()- e.request.requestStartDate.getTime(),
                             type: e.request.type,
                             bytesTotal: e.request.bytesTotal,
                             quality :  e.request.quality,
@@ -201,10 +260,10 @@ function showEvent(e){
                             url : e.request.url,
                             serviceLocation : e.request.serviceLocation })
         console.log(mediaFilesInfo[mediaFilesInfo.length-1])
+        if (e.request.type === "MediaSegment"){ ++MediaSegments }
+        plotBitrate();
+        updatePlaybackLogs();
         }
-      if (e.request.type === "MediaSegment"){ ++MediaSegments }
-      plot_bitrate()
-      update_playback_info();
     }
 
 
