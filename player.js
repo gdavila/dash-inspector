@@ -38,7 +38,9 @@ function init() {
   let eventPoller = setInterval(updateMetrics,interval*1000);
 
   // event handler: it handles when a A/V segment is full loaded
-  player.on(dashjs.MediaPlayer.events['FRAGMENT_LOADING_COMPLETED', 'MANIFEST_LOADED'],showEvent);
+  player.on(dashjs.MediaPlayer.events['FRAGMENT_LOADING_COMPLETED'],showEvent);
+  player.on(dashjs.MediaPlayer.events['MANIFEST_LOADED'],showEvent);
+
 
 
 }
@@ -238,7 +240,6 @@ reset_playback()
 
 
 function showEvent(e){
-  console.log(e)
   if (e.type === 'manifestLoaded'){
     mpd = e.data
   }
