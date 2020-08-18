@@ -1,6 +1,6 @@
 
 // player
-let video, player, controlbar, dashMetrics;
+let video, player, controlbar, dashMetrics, mpd;
 
 //Google charts
 let dataProfiles, dataBitrate, dataThroughput1, dataThroughput2, dataSegmentSize, lowlatency= false,bytesTotal;
@@ -38,7 +38,7 @@ function init() {
   let eventPoller = setInterval(updateMetrics,interval*1000);
 
   // event handler: it handles when a A/V segment is full loaded
-  player.on(dashjs.MediaPlayer.events['FRAGMENT_LOADING_COMPLETED'],showEvent);
+  player.on(dashjs.MediaPlayer.events['FRAGMENT_LOADING_COMPLETED', 'MANIFEST_LOADED'],showEvent);
 
 
 }
@@ -132,7 +132,7 @@ function updatePlaybackLogs(){
       var color = "#0070cc";
       dataProfiles.addRow([new Date(), qIndex, 'Buffer = ' + bufferLevel + 's','point {fill-color: ' + color + '}']);
       if (dataProfiles.getNumberOfRows() > 200){
-        data_profiles.removeRow(0); }
+        dataProfiles.removeRow(0); }
       chartProfiles.draw(dataProfiles, {
         title: 'Quality Index',
         hAxis: {title: 'Local Time'},
@@ -238,32 +238,37 @@ reset_playback()
 
 
 function showEvent(e){
-      if (e.request.mediaType === "video") {
-        lastSegmentDuration = e.request.duration;
-        lastStartTime = e.request.startTime
-        if (e.request.bytesTotal){
-          videoBitrate= (e.request.bytesTotal*8/1000) / e.request.duration
-        }
-        console.log(e)
-        log( e.type, e.request.url);
-        downloadTime = e.request.requestEndDate.getTime()- e.request.requestStartDate.getTime();
-        bytesTotal= e.request.bytesTotal
-        mediaFilesInfo.push({index: e.request.index,
-                            startTime: e.request.startTime,
-                            duration: e.request.duration,
-                            mediaType: e.request.mediaType, 
-                            downloadTime:e.request.requestEndDate.getTime()- e.request.requestStartDate.getTime(),
-                            type: e.request.type,
-                            bytesTotal: e.request.bytesTotal,
-                            quality :  e.request.quality,
-                            representationId: e.request.representationId,
-                            url : e.request.url,
-                            serviceLocation : e.request.serviceLocation })
-        console.log(mediaFilesInfo[mediaFilesInfo.length-1])
-        if (e.request.type === "MediaSegment"){ ++MediaSegments }
-        plotBitrate();
-        updatePlaybackLogs();
-        }
+  console.log(e)
+  if (e.type === 'manifestLoaded'){
+    mpd = e.data
+  }
+  if (e.type==='fragmentLoadingCompleted' && e.request.mediaType === "video" && e.request.type === "MediaSegment") {
+    lastSegmentDuration = e.request.duration;
+    lastStartTime = e.request.startTime
+    if (e.request.bytesTotal){
+      videoBitrate= (e.request.bytesTotal*8/1000) / e.request.duration
+    }
+    //console.log(e)
+    log( e.type, e.request.url);
+    downloadTime = e.request.requestEndDate.getTime()- e.request.requestStartDate.getTime();
+    bytesTotal= e.request.bytesTotal
+    mediaFilesInfo.push({index: e.request.index,
+                        startTime: e.request.startTime,
+                        timescale: e.request.timescale,
+                        duration: e.request.duration,
+                        mediaType: e.request.mediaType, 
+                        downloadingTime:e.request.requestEndDate.getTime()- e.request.requestStartDate.getTime(),
+                        type: e.request.type,
+                        bytesTotal: e.request.bytesTotal,
+                        quality :  e.request.quality,
+                        representationId: e.request.representationId,
+                        url : e.request.url,
+                        serviceLocation : e.request.serviceLocation })
+    //console.log(mediaFilesInfo[mediaFilesInfo.length-1])
+    ++MediaSegments
+    plotBitrate();
+    updatePlaybackLogs();
+    }
     }
 
 
@@ -279,18 +284,11 @@ function log(key, msg) {
 
 
 function downloadReport(){
-  let MediaInfo = player.getTracksFor("video")[0]
-  let MpdUrl = player.getSource()
-  let MediaFiles =  mediaFilesInfo
-  let Representations = []
+  let MediaInfo = player.getTracksFor("video")[0];
+  let MediaFiles =  mediaFilesInfo;
+  let mpdSummary = mpdParser();
 
-  for (let i =0; i < MediaInfo.representationCount; i++){
-    player.setQualityFor("video",i)
-    Representations.push(dashMetrics.getCurrentRepresentationSwitch("video").to)
-  }
-
-
-  let jsonContent =  JSON.stringify({MpdUrl, MediaInfo, MediaFiles, Representations})
+  let jsonContent =  JSON.stringify({mpdSummary, MediaInfo, MediaFiles})
 
   jsonContent = [jsonContent];
   var blob1 = new Blob(jsonContent, { type: "text/plain;charset=utf-8" });
@@ -310,4 +308,22 @@ function downloadReport(){
   document.body.removeChild(a);
   log("userEvent", "Logs Downloaded")
   }
+}
+
+function mpdParser(){
+  let mpdSummary={};
+  mpdSummary['baseUrl'] = mpd.baseUri;
+  mpdSummary['mpdUrl'] = player.getSource()
+  if (typeof  mpd.Period.BaseURL  === "undefined" ) mpdSummary['periodUrl'] = "";
+  else mpdSummary['periodUrl'] = mpd.Period.BaseURL;
+  
+  mpdSummary['videoRepresentations'] = {}
+  let videoRepresentation = dashAdapter.getAdaptationForType(streamInfo.index, video,streamInfo );
+  for (const representation of videoRepresentation.Representation_asArray ) {
+    mpdSummary['videoRepresentations'][representation.id] = { initialization: representation.SegmentTemplate.initialization,
+                                                  media: representation.SegmentTemplate.media,
+                                                  timescale: representation.SegmentTemplate.timescale
+                                                }
+  }
+  return mpdSummary;
 }
