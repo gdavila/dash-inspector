@@ -311,6 +311,27 @@ function downloadReport(){
   }
 }
 
+const postJson = async (jsonContent) => {
+  const response = await fetch('http://localhost:5000', {
+    method: 'POST',
+    body: jsonContent, // string or object
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+  const resp = await response;
+  console.log (resp)
+}
+
+function downloadSegments(){
+  let MediaInfo = player.getTracksFor("video")[0];
+  let MediaFiles =  mediaFilesInfo;
+  let mpdSummary = mpdParser();
+  let jsonContent =  JSON.stringify({mpdSummary, MediaInfo, MediaFiles});
+  postJson(jsonContent)
+
+}
+
 function mpdParser(){
   let mpdSummary={};
   mpdSummary['baseUrl'] = mpd.baseUri;

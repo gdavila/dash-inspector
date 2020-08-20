@@ -34,7 +34,8 @@
                 <input type="text" weight=320px  id="srcUrl" value = "https://media.axprod.net/TestVectors/v6.1-Clear/Manifest_1080p.mpd"/>
                 <input type="button" value="Reload" id= "startButton" onclick="restartPlayback()"> Low Latency <input type="checkbox" id="lowlatency" value="Low Latency" onclick="checkLL()">
                 <p/> 
-                <input type="button" value="Download Playback" onclick="downloadReport()" >
+                <input type="button" value="Download playback logs" onclick="downloadReport()" >
+                <input type="button" value="Download playback segments" onclick="downloadSegments()" >
                 <input type="button" value="Restart Playback" onclick="clearReport()" >
                 <span id="MediaSegments"></span> media segments recorded
                 <br/>
