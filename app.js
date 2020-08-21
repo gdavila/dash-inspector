@@ -10,11 +10,11 @@ app.use(function(req, res, next) {
 });
 
 
-app.use(express.static('dash-dwnld'));
+app.use(express.static('dash-inspector'));
 
 
 router.get('/',function(req,res){
-  res.sendFile(path.join(__dirname+'/dash-dwnld'+'/index.html'));
+  res.sendFile(path.join(__dirname+'/dash-inspector'+'/index.html'));
   //__dirname : It will resolve to your project folder.
 });
 
