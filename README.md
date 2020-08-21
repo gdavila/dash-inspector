@@ -8,7 +8,7 @@ dash-inspector is a simple web client to reproduce dash video. The web client su
 
 Additionally, a  log file with the playback session is available to download using `Download Playback` button. This log file contains all the URLs of the video segments during the playback.
 
-The downloaded file can be used with [getDashMediafiles.py](https://github.com/gdavila/vmafUtils) to download all the representation availables on the manifest during the playback.
+The downloaded file can be used with [getDashMediafiles.py](https://github.com/gdavila/dash-inspector-downloader/) to download all the representation availables on the manifest during the playback.
 
 ## How to use it
 
