@@ -20,3 +20,5 @@ Running at Port 3000
 ```
 
 The webclient will be available at `http://localhost:3000`
+
+Additionally, you can copy `dash-inspector` folder under the public folder of you current webser. Be sure to enable CORS.
