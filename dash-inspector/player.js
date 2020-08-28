@@ -9,8 +9,13 @@ let dataProfiles, dataBitrate, dataThroughput1, dataThroughput2, dataSegmentSize
 let mediaFilesInfo=[], MediaSegments=0, interval, streamInfo,src, firstSegment=true, initTime;
 let lastDecodedByteCount=0,bufferLevel, lastSegmentDuration, lastStartTime, videoBitrate=0, bitrate=0, downloadTime=0;
 
+//Downloader
+let server
+
 function init() {
   //initializing the player
+  setServer();
+
   player = dashjs.MediaPlayer().create();
   player.updateSettings({ 'streaming': { 'lowLatencyEnabled': false }});
   player.updateSettings({'debug': {'logLevel': dashjs.Debug.LOG_LEVEL_NONE }});
@@ -312,7 +317,7 @@ function downloadReport(){
 }
 
 const postJson = async (jsonContent) => {
-  const response = await fetch('http://localhost:5000', {
+  const response = await fetch(server, {
     method: 'POST',
     body: jsonContent, // string or object
     headers: {
@@ -330,6 +335,10 @@ function downloadSegments(){
   let jsonContent =  JSON.stringify({mpdSummary, MediaInfo, MediaFiles});
   postJson(jsonContent)
 
+}
+
+function setServer(){
+  server = document.getElementById('server').value;
 }
 
 function mpdParser(){

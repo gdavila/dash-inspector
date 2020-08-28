@@ -28,6 +28,12 @@
                 &nbsp;
                 &nbsp;
                 Media | Arquitectura Redes y Servicios
+                &nbsp;
+                &nbsp;
+                &nbsp;
+                &nbsp;
+                Server: <input type="text" weight=160px  id="server" value = "http://localhost:5000"/>
+                <input type="button" value="Set"  id = "server" onclick="setServer()" >
             </div>
             <p/>
                 Player for fun based on <a href="https://github.com/Dash-Industry-Forum/dash.js/">dash.js v3.1.2</a> <p/>
@@ -118,10 +124,10 @@
                     <textarea  id="trace" placeholder="Downloaded URLs Mediafiles of the active stream will be displayed here" readonly></textarea>
                 </td> 
                 <td>
-                    <div id="chart_SegmentSize" style="height:100%; width:360px;"> </div>
+                    <div id="chart_SegmentSize" style="height:100%; width:320px;"> </div>
                 </td>
                 <td>
-                    <div id="chart_throughput1" style="height:100%; width:360px;"> </div>
+                    <div id="chart_throughput1" style="height:100%; width:320px;"> </div>
                 </td>
             </tr>
         </table>
