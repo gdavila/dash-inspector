@@ -224,15 +224,14 @@ function initializeChart() {
     
 function clearReport(){
   let tempInfo = []
-  let offset = lastSegmentDuration*Math.ceil(bufferLevel/lastSegmentDuration)
+  let offset = lastSegmentDuration*Math.flo0r(bufferLevel/lastSegmentDuration)
   mediaFilesInfo.forEach(element => {
-    if (element.type === "InitializationSegment" ) {tempInfo.push(element);}
-    if (element.type === "video" && element.startTime >= lastStartTime-offset){
+    if (element.mediaType == "video" && element.startTime >= lastStartTime-offset){
       tempInfo.push(element);
     }
   })
   mediaFilesInfo=tempInfo;
-  MediaSegments=0;
+  MediaSegments=0 + mediaFilesInfo.length;
   log("userEvent", "Records cleaned. New start time: " + (lastStartTime-offset).toString())
 }
 
