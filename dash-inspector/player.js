@@ -224,7 +224,7 @@ function initializeChart() {
     
 function clearReport(){
   let tempInfo = []
-  let offset = lastSegmentDuration*Math.flo0r(bufferLevel/lastSegmentDuration)
+  let offset = lastSegmentDuration*Math.floor(bufferLevel/lastSegmentDuration)
   mediaFilesInfo.forEach(element => {
     if (element.mediaType == "video" && element.startTime >= lastStartTime-offset){
       tempInfo.push(element);
