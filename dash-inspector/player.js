@@ -348,7 +348,7 @@ function mpdParser(){
   else mpdSummary['periodUrl'] = mpd.Period.BaseURL;
   
   mpdSummary['videoRepresentations'] = {}
-  let videoRepresentation = dashAdapter.getAdaptationForType(streamInfo.index, video,streamInfo );
+  let videoRepresentation = dashAdapter.getAdaptationForType(streamInfo.index, "video",streamInfo );
   for (const representation of videoRepresentation.Representation_asArray ) {
     mpdSummary['videoRepresentations'][representation.id] = { initialization: representation.SegmentTemplate.initialization,
                                                   media: representation.SegmentTemplate.media,
